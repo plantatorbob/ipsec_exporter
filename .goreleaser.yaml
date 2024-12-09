@@ -1,0 +1,38 @@
+version: 2
+
+dist: ./dist
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: release
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    goarch:
+      - amd64
+    goamd64:
+      - v2
+
+archives:
+  - format: tar.gz
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    builds_info:
+      group: root
+      owner: root
+      mode: 0644
+
+changelog:
+  sort: asc
+  format: "{{ .SHA }}: {{ .Message }}"
+
+  filters:
+    include:
+      - "^feat:"
+      - "^fix:"
+
+checksum:
+  disable: true

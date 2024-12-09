@@ -1,20 +1,11 @@
-package main
+package app
 
 import (
 	"log"
-	"net/http"
 
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/strongswan/govici/vici"
 )
 
-func main() {
-	log.Println("Up and Running")
-	strongswanCollector := NewStrongswanCollector()
-	strongswanCollector.init()
-	http.Handle("/metrics", promhttp.Handler())
-	log.Fatalln(http.ListenAndServe(":9814", nil))
-}
 func listSAs() ([]LoadedIKE, error) {
 	s, err := vici.NewSession()
 	if err != nil {
@@ -28,16 +19,22 @@ func listSAs() ([]LoadedIKE, error) {
 	if err != nil {
 		return retVar, err
 	}
-	for _, m := range msgs { // <- Directly iterate over msgs
+
+	for _, m := range msgs.Messages() { // <- Directly iterate over msgs
 		if e := m.Err(); e != nil {
-			//ignoring this error
+			// ignoring this error
 			continue
 		}
+
 		for _, k := range m.Keys() {
-			inbound := m.Get(k).(*vici.Message)
+			inbound, ok := m.Get(k).(*vici.Message)
+			if !ok {
+				continue
+			}
+
 			var ike LoadedIKE
 			if e := vici.UnmarshalMessage(inbound, &ike); e != nil {
-				//ignoring this marshal/unmarshal error!
+				// ignoring this marshal/unmarshal error!
 				continue
 			}
 			ike.Name = k
